@@ -16,21 +16,21 @@ public final class Entity
    public int actionPeriod;
    public int animationPeriod;
 
-   public static final String BLOB_KEY = "blob";
-   public static final String BLOB_ID_SUFFIX = " -- blob";
-   public static final int BLOB_PERIOD_SCALE = 4;
-   public static final int BLOB_ANIMATION_MIN = 50;
-   public static final int BLOB_ANIMATION_MAX = 150;
+   public  final String BLOB_KEY = "blob";
+   public  final String BLOB_ID_SUFFIX = " -- blob";
+   public  final int BLOB_PERIOD_SCALE = 4;
+   public  final int BLOB_ANIMATION_MIN = 50;
+   public  final int BLOB_ANIMATION_MAX = 150;
 
-   public static final Random rand = new Random();
+   public  final Random rand = new Random();
 
-   public static final String QUAKE_KEY = "quake";
-   public static final String ORE_KEY = "ore";
+   public  final String QUAKE_KEY = "quake";
+   public  static final String ORE_KEY = "ore";
 
 
-   public static final String ORE_ID_PREFIX = "ore -- ";
-   public static final int ORE_CORRUPT_MIN = 20000;
-   public static final int ORE_CORRUPT_MAX = 30000;
+   public  final String ORE_ID_PREFIX = "ore -- ";
+   public  final int ORE_CORRUPT_MIN = 20000;
+   public  final int ORE_CORRUPT_MAX = 30000;
 
 
    public Entity(EntityKind kind, String id, Point position,
@@ -87,7 +87,7 @@ public final class Entity
    {
       Point pos = this.position;  // store current position before removing
 
-      world.removeEntity(this);
+      this.removeEntity(world);
       scheduler.unscheduleAllEvents(this);
 
       Entity blob = Functions.createOreBlob(this.id + BLOB_ID_SUFFIX,
@@ -96,7 +96,7 @@ public final class Entity
                       rand.nextInt(BLOB_ANIMATION_MAX - BLOB_ANIMATION_MIN),
               imageStore.getImageList(BLOB_KEY));
 
-      world.addEntity(blob);
+      blob.addEntity(world);
       scheduler.scheduleActions(blob, world, imageStore);
    }
 
@@ -115,7 +115,7 @@ public final class Entity
             Entity quake = Functions.createQuake(tgtPos,
                     imageStore.getImageList(QUAKE_KEY));
 
-            world.addEntity(quake);
+            quake.addEntity(world);
             nextPeriod += this.actionPeriod;
             scheduler.scheduleActions(quake, world, imageStore);
          }
@@ -129,7 +129,7 @@ public final class Entity
                                            ImageStore imageStore, EventScheduler scheduler)
    {
       scheduler.unscheduleAllEvents(this);
-      world.removeEntity(this);
+      this.removeEntity(world);
    }
 
    public void executeVeinActivity(WorldModel world,
@@ -143,7 +143,7 @@ public final class Entity
                  openPt.get(), ORE_CORRUPT_MIN +
                          rand.nextInt(ORE_CORRUPT_MAX - ORE_CORRUPT_MIN),
                  imageStore.getImageList(ORE_KEY));
-         world.addEntity(ore);
+         ore.addEntity(world);
          scheduler.scheduleActions(ore, world, imageStore);
       }
 
@@ -280,7 +280,7 @@ public final class Entity
       }
       else
       {
-         Point nextPos = nextPositionOreBlob(this, world, target.position);
+         Point nextPos = nextPositionOreBlob(world, target.position);
 
          if (!this.position.equals(nextPos))
          {
@@ -290,7 +290,7 @@ public final class Entity
                scheduler.unscheduleAllEvents(occupant.get());
             }
 
-            moveEntity(world, this, nextPos);
+            moveEntity(world, nextPos);
          }
          return false;
       }
@@ -306,13 +306,13 @@ public final class Entity
       Point newPos = new Point(this.position.x + horiz,
               this.position.y);
 
-      if (horiz == 0 || isOccupied(world, newPos))
+      if (horiz == 0 || world.isOccupied(newPos))
       {
          int vert = Integer.signum(destPos.y - this.position.y);
          newPos = new Point(this.position.x,
                  this.position.y + vert);
 
-         if (vert == 0 || isOccupied(world, newPos))
+         if (vert == 0 || world.isOccupied(newPos))
          {
             newPos = this.position;
          }

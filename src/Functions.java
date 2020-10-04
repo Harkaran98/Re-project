@@ -13,13 +13,12 @@ public final class Functions
 
 
 
-   public static final int ORE_REACH = 1;
 
 
    public static final String QUAKE_ID = "quake";
    public static final int QUAKE_ACTION_PERIOD = 1100;
    public static final int QUAKE_ANIMATION_PERIOD = 100;
-   public static final int QUAKE_ANIMATION_REPEAT_COUNT = 10;
+
 
    public static final int COLOR_MASK = 0xffffff;
    public static final int KEYED_IMAGE_MIN = 5;
@@ -337,7 +336,7 @@ public final class Functions
             return parseMiner(properties, world, imageStore);
          case OBSTACLE_KEY:
             return parseObstacle(properties, world, imageStore);
-         case ORE_KEY:
+            case Entity.ORE_KEY:
             return parseOre(properties, world, imageStore);
          case SMITH_KEY:
             return parseSmith(properties, world, imageStore);
@@ -408,7 +407,7 @@ public final class Functions
             Integer.parseInt(properties[ORE_ROW]));
          Entity entity = createOre(properties[ORE_ID],
             pt, Integer.parseInt(properties[ORE_ACTION_PERIOD]),
-                 imageStore.getImageList(ORE_KEY));
+                 imageStore.getImageList(Entity.ORE_KEY));
          tryAddEntity(world, entity);
       }
 
@@ -449,7 +448,7 @@ public final class Functions
 
    public static void tryAddEntity(WorldModel world, Entity entity)
    {
-      if (isOccupied(world, entity.position))
+      if (world.isOccupied(entity.position))
       {
          // arguably the wrong type of exception, but we are not
          // defining our own exceptions yet
@@ -461,20 +460,8 @@ public final class Functions
 
 
 
-   public static boolean isOccupied(WorldModel world, Point pos)
-   {
-      return world.withinBounds(pos) &&
-         getOccupancyCell(world, pos) != null;
-   }
 
 
-   public static int distanceSquared(Point p1, Point p2)
-   {
-      int deltaX = p1.x - p2.x;
-      int deltaY = p1.y - p2.y;
-
-      return deltaX * deltaX + deltaY * deltaY;
-   }
 
 
 
@@ -508,10 +495,6 @@ public final class Functions
 
 
 
-   public static Entity getOccupancyCell(WorldModel world, Point pos)
-   {
-      return world.occupancy[pos.y][pos.x];
-   }
 
 
 

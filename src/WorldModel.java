@@ -8,6 +8,8 @@ public final class WorldModel
    public Entity occupancy[][];
    public Set<Entity> entities;
 
+   public final int ORE_REACH = 1;
+
    public WorldModel(int numRows, int numCols, Background defaultBackground)
    {
       this.numRows = numRows;
@@ -50,8 +52,8 @@ public final class WorldModel
          for (int dx = -ORE_REACH; dx <= ORE_REACH; dx++)
          {
             Point newPt = new Point(pos.x + dx, pos.y + dy);
-            if (withinBounds(this, newPt) &&
-                    !isOccupied(this, newPt))
+            if (withinBounds(newPt) &&
+                    !isOccupied(newPt))
             {
                return Optional.of(newPt);
             }
@@ -89,9 +91,9 @@ public final class WorldModel
    }
    public Optional<Entity> getOccupant(Point pos)
    {
-      if (isOccupied(this, pos))
+      if (isOccupied(pos))
       {
-         return Optional.of(getOccupancyCell(this, pos));
+         return Optional.of(getOccupancyCell(pos));
       }
       else
       {
@@ -101,16 +103,16 @@ public final class WorldModel
 
    public void removeEntityAt(Point pos)
    {
-      if (withinBounds(this, pos)
-              && getOccupancyCell(this, pos) != null)
+      if (withinBounds(pos)
+              && getOccupancyCell(pos) != null)
       {
-         Entity entity = getOccupancyCell(this, pos);
+         Entity entity = getOccupancyCell(pos);
 
          /* this moves the entity just outside of the grid for
             debugging purposes */
          entity.position = new Point(-1, -1);
          this.entities.remove(entity);
-         setOccupancyCell(this, pos, null);
+         setOccupancyCell(pos, null);
       }
    }
    public boolean withinBounds(Point pos)
@@ -122,5 +124,23 @@ public final class WorldModel
    public void setOccupancyCell(Point pos,Entity entity)
    {
       this.occupancy[pos.y][pos.x] = entity;
+   }
+
+   public  boolean isOccupied(Point pos)
+   {
+      return this.withinBounds(pos) &&
+              getOccupancyCell(pos) != null;
+   }
+   public int distanceSquared(Point p1, Point p2)
+   {
+      int deltaX = p1.x - p2.x;
+      int deltaY = p1.y - p2.y;
+
+      return deltaX * deltaX + deltaY * deltaY;
+   }
+
+   public Entity getOccupancyCell(Point pos)
+   {
+      return this.occupancy[pos.y][pos.x];
    }
 }
