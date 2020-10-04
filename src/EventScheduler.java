@@ -103,4 +103,25 @@ public final class EventScheduler
          default:
       }
    }
+
+
+
+   /**
+    * Asks the scheduler to execute all events that take place
+    * before the specified time.
+    */
+   public void updateOnTime(long time)
+   {
+      while (!this.eventQueue.isEmpty() &&
+              this.eventQueue.peek().time < time)
+      {
+         Event next = this.eventQueue.poll();
+
+         next.removePendingEvent(this);
+
+         next.action.executeAction(this);
+      }
+   }
+
+
 }

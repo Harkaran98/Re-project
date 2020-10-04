@@ -70,27 +70,7 @@ public final class Functions
    public static final int VEIN_ACTION_PERIOD = 4;
 
 
-   /**
-    * Gets the current image associated with the specified entity.
-    */
-   public static PImage getCurrentImage(Object entity)
-   {
-      if (entity instanceof Background)
-      {
-         return ((Background)entity).images
-            .get(((Background)entity).imageIndex);
-      }
-      else if (entity instanceof Entity)
-      {
-         return ((Entity)entity).images.get(((Entity)entity).imageIndex);
-      }
-      else
-      {
-         throw new UnsupportedOperationException(
-            String.format("getCurrentImage not supported for %s",
-            entity));
-      }
-   }
+
 
 
 
@@ -161,36 +141,8 @@ public final class Functions
 
 
 
-   /**
-    * Asks the scheduler to removes the specified pending event.
-    */
-   public static void removePendingEvent(EventScheduler scheduler,
-      Event event)
-   {
-      List<Event> pending = scheduler.pendingEvents.get(event.entity);
 
-      if (pending != null)
-      {
-         pending.remove(event);
-      }
-   }
 
-   /**
-    * Asks the scheduler to execute all events that take place 
-    * before the specified time.
-    */
-   public static void updateOnTime(EventScheduler scheduler, long time)
-   {
-      while (!scheduler.eventQueue.isEmpty() &&
-         scheduler.eventQueue.peek().time < time)
-      {
-         Event next = scheduler.eventQueue.poll();
-         
-         removePendingEvent(scheduler, next);
-         
-         next.action.executeAction(scheduler);
-      }
-   }
 
 
    /**
@@ -277,23 +229,9 @@ public final class Functions
       img.updatePixels();
    }
 
-   /**
-    * Set the viewport's row and column counts to the specified values.
-    */
-   public static void shift(Viewport viewport, int col, int row)
-   {
-      viewport.col = col;
-      viewport.row = row;
-   }
 
-   /**
-    * Check if the viewport contains the specified Point p.
-    */
-   public static boolean contains(Viewport viewport, Point p)
-   {
-      return p.y >= viewport.row && p.y < viewport.row + viewport.numRows &&
-         p.x >= viewport.col && p.x < viewport.col + viewport.numCols;
-   }
+
+
 
    public static void load(Scanner in, WorldModel world, ImageStore imageStore)
    {
@@ -356,8 +294,7 @@ public final class Functions
          Point pt = new Point(Integer.parseInt(properties[BGND_COL]),
             Integer.parseInt(properties[BGND_ROW]));
          String id = properties[BGND_ID];
-         setBackground(world, pt,
-            new Background(id, imageStore.getImageList(id)));
+         new Background(id, imageStore.getImageList(id)).setBackground(world, pt);
       }
 
       return properties.length == BGND_NUM_PROPERTIES;
@@ -376,7 +313,7 @@ public final class Functions
             Integer.parseInt(properties[MINER_ACTION_PERIOD]),
             Integer.parseInt(properties[MINER_ANIMATION_PERIOD]),
                  imageStore.getImageList(MINER_KEY));
-         tryAddEntity(world, entity);
+         entity.tryAddEntity(world);
       }
 
       return properties.length == MINER_NUM_PROPERTIES;
@@ -392,7 +329,7 @@ public final class Functions
             Integer.parseInt(properties[OBSTACLE_ROW]));
          Entity entity = createObstacle(properties[OBSTACLE_ID],
             pt, imageStore.getImageList(OBSTACLE_KEY));
-         tryAddEntity(world, entity);
+         entity.tryAddEntity(world);
       }
 
       return properties.length == OBSTACLE_NUM_PROPERTIES;
@@ -408,7 +345,7 @@ public final class Functions
          Entity entity = createOre(properties[ORE_ID],
             pt, Integer.parseInt(properties[ORE_ACTION_PERIOD]),
                  imageStore.getImageList(Entity.ORE_KEY));
-         tryAddEntity(world, entity);
+         entity.tryAddEntity(world);
       }
 
       return properties.length == ORE_NUM_PROPERTIES;
@@ -423,7 +360,7 @@ public final class Functions
             Integer.parseInt(properties[SMITH_ROW]));
          Entity entity = createBlacksmith(properties[SMITH_ID],
             pt, imageStore.getImageList(SMITH_KEY));
-         tryAddEntity(world, entity);
+         entity.tryAddEntity(world);
       }
 
       return properties.length == SMITH_NUM_PROPERTIES;
@@ -440,23 +377,12 @@ public final class Functions
             pt,
             Integer.parseInt(properties[VEIN_ACTION_PERIOD]),
                  imageStore.getImageList(VEIN_KEY));
-         tryAddEntity(world, entity);
+         entity.tryAddEntity(world);
       }
 
       return properties.length == VEIN_NUM_PROPERTIES;
    }
 
-   public static void tryAddEntity(WorldModel world, Entity entity)
-   {
-      if (world.isOccupied(entity.position))
-      {
-         // arguably the wrong type of exception, but we are not
-         // defining our own exceptions yet
-         throw new IllegalArgumentException("position occupied");
-      }
-
-      entity.addEntity(world);
-   }
 
 
 
@@ -471,53 +397,17 @@ public final class Functions
 
 
 
-   public static Optional<PImage> getBackgroundImage(WorldModel world,
-      Point pos)
-   {
-      if (world.withinBounds(pos))
-      {
-         return Optional.of(getCurrentImage(getBackgroundCell(world, pos)));
-      }
-      else
-      {
-         return Optional.empty();
-      }
-   }
-
-   public static void setBackground(WorldModel world, Point pos,
-      Background background)
-   {
-      if (world.withinBounds(pos))
-      {
-         setBackgroundCell(world, pos, background);
-      }
-   }
 
 
 
 
 
 
-   public static Background getBackgroundCell(WorldModel world, Point pos)
-   {
-      return world.background[pos.y][pos.x];
-   }
 
-   public static void setBackgroundCell(WorldModel world, Point pos,
-      Background background)
-   {
-      world.background[pos.y][pos.x] = background;
-   }
 
-   public static Point viewportToWorld(Viewport viewport, int col, int row)
-   {
-      return new Point(col + viewport.col, row + viewport.row);
-   }
 
-   public static Point worldToViewport(Viewport viewport, int col, int row)
-   {
-      return new Point(col - viewport.col, row - viewport.row);
-   }
+
+
 
    public static int clamp(int value, int low, int high)
    {
@@ -531,47 +421,13 @@ public final class Functions
       int newRow = clamp(view.viewport.row + rowDelta, 0,
          view.world.numRows - view.viewport.numRows);
 
-      shift(view.viewport, newCol, newRow);
+      view.viewport.shift(newCol, newRow);
    }
 
-   public static void drawBackground(WorldView view)
-   {
-      for (int row = 0; row < view.viewport.numRows; row++)
-      {
-         for (int col = 0; col < view.viewport.numCols; col++)
-         {
-            Point worldPoint = viewportToWorld(view.viewport, col, row);
-            Optional<PImage> image = getBackgroundImage(view.world,
-               worldPoint);
-            if (image.isPresent())
-            {
-               view.screen.image(image.get(), col * view.tileWidth,
-                  row * view.tileHeight);
-            }
-         }
-      }
-   }
 
-   public static void drawEntities(WorldView view)
-   {
-      for (Entity entity : view.world.entities)
-      {
-         Point pos = entity.position;
 
-         if (contains(view.viewport, pos))
-         {
-            Point viewPoint = worldToViewport(view.viewport, pos.x, pos.y);
-            view.screen.image(getCurrentImage(entity),
-               viewPoint.x * view.tileWidth, viewPoint.y * view.tileHeight);
-         }
-      }
-   }
 
-   public static void drawViewport(WorldView view)
-   {
-      drawBackground(view);
-      drawEntities(view);
-   }
+
 
    public static Action createAnimationAction(Entity entity, int repeatCount)
    {

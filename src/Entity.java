@@ -378,5 +378,17 @@ public final class Entity
       return newPos;
    }
 
+   public void tryAddEntity(WorldModel world)
+   {
+      if (world.isOccupied(this.position))
+      {
+         // arguably the wrong type of exception, but we are not
+         // defining our own exceptions yet
+         throw new IllegalArgumentException("position occupied");
+      }
+
+      this.addEntity(world);
+   }
+
 
 }

@@ -1,4 +1,6 @@
 import java.util.List;
+import java.util.Optional;
+
 import processing.core.PImage;
 
 public final class Background
@@ -12,4 +14,22 @@ public final class Background
       this.id = id;
       this.images = images;
    }
+
+   public void setBackground(WorldModel world, Point pos)
+   {
+      if (world.withinBounds(pos))
+      {
+         world.setBackgroundCell(pos,this);
+      }
+   }
+
+
+
+
+
+
+
+
+
+
 }

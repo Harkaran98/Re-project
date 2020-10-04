@@ -1,3 +1,5 @@
+import processing.core.PImage;
+
 import java.util.*;
 
 public final class WorldModel
@@ -143,4 +145,47 @@ public final class WorldModel
    {
       return this.occupancy[pos.y][pos.x];
    }
+
+   public Optional<PImage> getBackgroundImage(Point pos)
+   {
+      if (this.withinBounds(pos))
+      {
+         return Optional.of(getCurrentImage(getBackgroundCell(pos)));
+      }
+      else
+      {
+         return Optional.empty();
+      }
+   }
+   public Background getBackgroundCell(Point pos)
+   {
+      return this.background[pos.y][pos.x];
+   }
+   public  void setBackgroundCell(Point pos,Background background)
+   {
+      this.background[pos.y][pos.x] = background;
+   }
+
+   /**
+    * Gets the current image associated with the specified entity.
+    */
+   public static PImage getCurrentImage(Object entity)
+   {
+      if (entity instanceof Background)
+      {
+         return ((Background)entity).images
+                 .get(((Background)entity).imageIndex);
+      }
+      else if (entity instanceof Entity)
+      {
+         return ((Entity)entity).images.get(((Entity)entity).imageIndex);
+      }
+      else
+      {
+         throw new UnsupportedOperationException(
+                 String.format("getCurrentImage not supported for %s",
+                         entity));
+      }
+   }
+
 }

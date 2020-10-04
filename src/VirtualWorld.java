@@ -73,11 +73,11 @@ public final class VirtualWorld
       long time = System.currentTimeMillis();
       if (time >= next_time)
       {
-         Functions.updateOnTime(this.scheduler, time);
+         scheduler.updateOnTime(time);
          next_time = time + TIMER_ACTION_PERIOD;
       }
 
-      Functions.drawViewport(view);
+      view.viewport.drawViewport(view);
    }
 
    public void keyPressed()
