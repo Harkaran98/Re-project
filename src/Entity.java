@@ -1,5 +1,6 @@
 import java.util.List;
 import java.util.Optional;
+import java.util.Random;
 
 import processing.core.PImage;
 
@@ -14,6 +15,18 @@ public final class Entity
    public int resourceCount;
    public int actionPeriod;
    public int animationPeriod;
+
+   public static final String BLOB_KEY = "blob";
+   public static final String BLOB_ID_SUFFIX = " -- blob";
+   public static final int BLOB_PERIOD_SCALE = 4;
+   public static final int BLOB_ANIMATION_MIN = 50;
+   public static final int BLOB_ANIMATION_MAX = 150;
+
+   public static final Random rand = new Random();
+
+   public static final String QUAKE_KEY = "quake";
+   public static final String ORE_KEY = "ore";
+
 
    public Entity(EntityKind kind, String id, Point position,
       List<PImage> images, int resourceLimit, int resourceCount,
@@ -33,13 +46,13 @@ public final class Entity
    public void executeMinerFullActivity(WorldModel world,
                                                ImageStore imageStore, EventScheduler scheduler)
    {
-      Optional<Entity> fullTarget = findNearest(world, this.position,
+      Optional<Entity> fullTarget = world.findNearest(this.position,
               EntityKind.BLACKSMITH);
 
       if (fullTarget.isPresent() &&
-              moveToFull(this, world, fullTarget.get(), scheduler))
+              moveToFull(world, fullTarget.get(), scheduler))
       {
-         transformFull(this, world, scheduler, imageStore);
+         transformFull(world, scheduler, imageStore);
       }
       else
       {
@@ -51,15 +64,15 @@ public final class Entity
 
    public void executeMinerNotFullActivity(WorldModel world, ImageStore imageStore, EventScheduler scheduler)
    {
-      Optional<Entity> notFullTarget = findNearest(world, this.position,
+      Optional<Entity> notFullTarget = world.findNearest(this.position,
               EntityKind.ORE);
 
       if (!notFullTarget.isPresent() ||
-              !moveToNotFull(this, world, notFullTarget.get(), scheduler) ||
-              !transformNotFull(this, world, scheduler, imageStore))
+              !moveToNotFull(world, notFullTarget.get(), scheduler) ||
+              !transformNotFull(world, scheduler, imageStore))
       {
          scheduler.scheduleEvent(this,
-                 createActivityAction(this, world, imageStore),
+                 Functions.createActivityAction(this, world, imageStore),
                  this.actionPeriod);
       }
    }
@@ -69,17 +82,17 @@ public final class Entity
    {
       Point pos = this.position;  // store current position before removing
 
-      removeEntity(world, this);
-      unscheduleAllEvents(scheduler, this);
+      world.removeEntity(this);
+      scheduler.unscheduleAllEvents(this);
 
-      Entity blob = createOreBlob(this.id + BLOB_ID_SUFFIX,
+      Entity blob = Functions.createOreBlob(this.id + BLOB_ID_SUFFIX,
               pos, this.actionPeriod / BLOB_PERIOD_SCALE,
               BLOB_ANIMATION_MIN +
                       rand.nextInt(BLOB_ANIMATION_MAX - BLOB_ANIMATION_MIN),
-              getImageList(imageStore, BLOB_KEY));
+              imageStore.getImageList(BLOB_KEY));
 
-      addEntity(world, blob);
-      scheduleActions(blob, scheduler, world, imageStore);
+      world.addEntity(blob);
+      scheduler.scheduleActions(blob, world, imageStore);
    }
 
    public void executeOreBlobActivity(WorldModel world,
@@ -96,11 +109,11 @@ public final class Entity
          if (moveToOreBlob(this, world, blobTarget.get(), scheduler))
          {
             Entity quake = createQuake(tgtPos,
-                    getImageList(imageStore, QUAKE_KEY));
+                    imageStore.getImageList(QUAKE_KEY));
 
-            addEntity(world, quake);
+            world.addEntity(quake);
             nextPeriod += this.actionPeriod;
-            scheduleActions(quake, scheduler, world, imageStore);
+            scheduler.scheduleActions(quake, world, imageStore);
          }
       }
 
@@ -111,8 +124,8 @@ public final class Entity
    public void executeQuakeActivity(WorldModel world,
                                            ImageStore imageStore, EventScheduler scheduler)
    {
-      unscheduleAllEvents(scheduler, this);
-      removeEntity(world, this);
+      scheduler.unscheduleAllEvents(this);
+      world.removeEntity(this);
    }
 
    public void executeVeinActivity(WorldModel world,
@@ -125,9 +138,9 @@ public final class Entity
          Entity ore = createOre(ORE_ID_PREFIX + this.id,
                  openPt.get(), ORE_CORRUPT_MIN +
                          rand.nextInt(ORE_CORRUPT_MAX - ORE_CORRUPT_MIN),
-                 getImageList(imageStore, ORE_KEY));
-         addEntity(world, ore);
-         scheduleActions(ore, scheduler, world, imageStore);
+                 imageStore.getImageList(ORE_KEY));
+         world.addEntity(ore);
+         scheduler.scheduleActions(ore, world, imageStore);
       }
 
       scheduler.scheduleEvent(this,
@@ -163,6 +176,94 @@ public final class Entity
       }
    }
 
+
+   public  boolean moveToFull(WorldModel world,
+                                    Entity target, EventScheduler scheduler)
+   {
+      if (adjacent(this.position, target.position))
+      {
+         return true;
+      }
+      else
+      {
+         Point nextPos = nextPositionMiner(this, world, target.position);
+
+         if (!this.position.equals(nextPos))
+         {
+            Optional<Entity> occupant = getOccupant(world, nextPos);
+            if (occupant.isPresent())
+            {
+               scheduler.unscheduleAllEvents(occupant.get());
+            }
+
+            moveEntity(world, this, nextPos);
+         }
+         return false;
+      }
+   }
+   public void transformFull(WorldModel world,
+                                    EventScheduler scheduler, ImageStore imageStore)
+   {
+      Entity miner = createMinerNotFull(this.id, this.resourceLimit,
+              this.position, this.actionPeriod, this.animationPeriod,
+              this.images);
+
+      world.removeEntity(this);
+      scheduler.unscheduleAllEvents(this);
+
+      world.addEntity(miner);
+      scheduler.scheduleActions(miner, world, imageStore);
+   }
+
+   public boolean moveToNotFull(WorldModel world,
+                                       Entity target, EventScheduler scheduler)
+   {
+      if (adjacent(this.position, target.position))
+      {
+         this.resourceCount += 1;
+         world.removeEntity(target);
+         scheduler.unscheduleAllEvents(target);
+
+         return true;
+      }
+      else
+      {
+         Point nextPos = nextPositionMiner(this, world, target.position);
+
+         if (!this.position.equals(nextPos))
+         {
+            Optional<Entity> occupant = getOccupant(world, nextPos);
+            if (occupant.isPresent())
+            {
+               scheduler.unscheduleAllEvents(occupant.get());
+            }
+
+            moveEntity(world, this, nextPos);
+         }
+         return false;
+      }
+   }
+
+   public  boolean transformNotFull(WorldModel world,
+                                          EventScheduler scheduler, ImageStore imageStore)
+   {
+      if (this.resourceCount >= this.resourceLimit)
+      {
+         Entity miner = createMinerFull(this.id, this.resourceLimit,
+                 this.position, this.actionPeriod, this.animationPeriod,
+                 this.images);
+
+         world.removeEntity(this);
+         scheduler.unscheduleAllEvents(this);
+
+         world.addEntity(miner);
+         scheduler.scheduleActions(miner, world, imageStore);
+
+         return true;
+      }
+
+      return false;
+   }
 
 
 }

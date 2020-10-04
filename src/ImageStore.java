@@ -15,4 +15,13 @@ public final class ImageStore
       defaultImages = new LinkedList<>();
       defaultImages.add(defaultImage);
    }
+
+   /**
+    * Gets the list of images associated with the given key.
+    */
+   public List<PImage> getImageList(String key)
+   {
+      return this.images.getOrDefault(key, this.defaultImages);
+   }
+
 }
