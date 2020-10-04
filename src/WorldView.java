@@ -5,10 +5,10 @@ import java.util.Optional;
 
 public final class WorldView
 {
-   public PApplet screen;
-   public WorldModel world;
-   public int tileWidth;
-   public int tileHeight;
+   private PApplet screen;
+   private WorldModel world;
+   private int tileWidth;
+   private int tileHeight;
    public Viewport viewport;
 
    public WorldView(int numRows, int numCols, PApplet screen, WorldModel world,
@@ -50,5 +50,20 @@ public final class WorldView
                     viewPoint.x * this.tileWidth, viewPoint.y * this.tileHeight);
          }
       }
+   }
+
+   public  void shiftView(int colDelta, int rowDelta)
+   {
+      int newCol = clamp(this.viewport.col + colDelta, 0,
+              this.world.numCols - this.viewport.numCols);
+      int newRow = clamp(this.viewport.row + rowDelta, 0,
+              this.world.numRows - this.viewport.numRows);
+
+      this.viewport.shift(newCol, newRow);
+   }
+
+   public static int clamp(int value, int low, int high)
+   {
+      return Math.min(high, Math.max(value, low));
    }
 }

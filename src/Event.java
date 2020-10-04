@@ -4,7 +4,7 @@ public final class Event
 {
    public Action action;
    public long time;
-   public Entity entity;
+   private Entity entity;
 
    public Event(Action action, long time, Entity entity)
    {

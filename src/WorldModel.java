@@ -6,11 +6,11 @@ public final class WorldModel
 {
    public int numRows;
    public int numCols;
-   public Background background[][];
-   public Entity occupancy[][];
+   private Background background[][];
+   private Entity occupancy[][];
    public Set<Entity> entities;
 
-   public final int ORE_REACH = 1;
+   private final int ORE_REACH = 1;
 
    public WorldModel(int numRows, int numCols, Background defaultBackground)
    {

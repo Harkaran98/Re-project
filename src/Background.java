@@ -5,7 +5,7 @@ import processing.core.PImage;
 
 public final class Background
 {
-   public String id;
+   private String id;
    public List<PImage> images;
    public int imageIndex;
 
@@ -22,14 +22,5 @@ public final class Background
          world.setBackgroundCell(pos,this);
       }
    }
-
-
-
-
-
-
-
-
-
 
 }

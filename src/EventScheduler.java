@@ -2,11 +2,11 @@ import java.util.*;
 
 public final class EventScheduler
 {
-   public PriorityQueue<Event> eventQueue;
+   private PriorityQueue<Event> eventQueue;
    public Map<Entity, List<Event>> pendingEvents;
-   public double timeScale;
+   private double timeScale;
 
-   public static final int QUAKE_ANIMATION_REPEAT_COUNT = 10;
+   private static final int QUAKE_ANIMATION_REPEAT_COUNT = 10;
 
    public EventScheduler(double timeScale)
    {

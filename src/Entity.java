@@ -7,30 +7,30 @@ import processing.core.PImage;
 public final class Entity
 {
    public EntityKind kind;
-   public String id;
+   private String id;
    public Point position;
    public List<PImage> images;
    public int imageIndex;
-   public int resourceLimit;
-   public int resourceCount;
+   private int resourceLimit;
+   private int resourceCount;
    public int actionPeriod;
-   public int animationPeriod;
+   private int animationPeriod;
 
-   public  final String BLOB_KEY = "blob";
-   public  final String BLOB_ID_SUFFIX = " -- blob";
-   public  final int BLOB_PERIOD_SCALE = 4;
-   public  final int BLOB_ANIMATION_MIN = 50;
-   public  final int BLOB_ANIMATION_MAX = 150;
+   private  final String BLOB_KEY = "blob";
+   private  final String BLOB_ID_SUFFIX = " -- blob";
+   private  final int BLOB_PERIOD_SCALE = 4;
+   private  final int BLOB_ANIMATION_MIN = 50;
+   private  final int BLOB_ANIMATION_MAX = 150;
 
-   public  final Random rand = new Random();
+   private  final Random rand = new Random();
 
-   public  final String QUAKE_KEY = "quake";
+   private  final String QUAKE_KEY = "quake";
    public  static final String ORE_KEY = "ore";
 
 
-   public  final String ORE_ID_PREFIX = "ore -- ";
-   public  final int ORE_CORRUPT_MIN = 20000;
-   public  final int ORE_CORRUPT_MAX = 30000;
+   private  final String ORE_ID_PREFIX = "ore -- ";
+   private  final int ORE_CORRUPT_MIN = 20000;
+   private  final int ORE_CORRUPT_MAX = 30000;
 
 
    public Entity(EntityKind kind, String id, Point position,
