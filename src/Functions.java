@@ -13,9 +13,6 @@ public final class Functions
 
 
 
-   public static final String ORE_ID_PREFIX = "ore -- ";
-   public static final int ORE_CORRUPT_MIN = 20000;
-   public static final int ORE_CORRUPT_MAX = 30000;
    public static final int ORE_REACH = 1;
 
 
@@ -157,57 +154,8 @@ public final class Functions
    /**
     * TODO
     */
-   public static boolean moveToOreBlob(Entity blob, WorldModel world,
-      Entity target, EventScheduler scheduler)
-   {
-      if (adjacent(blob.position, target.position))
-      {
-         world.removeEntity(target);
-         scheduler.unscheduleAllEvents(target);
-         return true;
-      }
-      else
-      {
-         Point nextPos = nextPositionOreBlob(blob, world, target.position);
 
-         if (!blob.position.equals(nextPos))
-         {
-            Optional<Entity> occupant = getOccupant(world, nextPos);
-            if (occupant.isPresent())
-            {
-               scheduler.unscheduleAllEvents(occupant.get());
-            }
 
-            moveEntity(world, blob, nextPos);
-         }
-         return false;
-      }
-   }
-
-   /**
-    * Gets the miner entity's next position. 
-    */
-   public static Point nextPositionMiner(Entity entity, WorldModel world,
-      Point destPos)
-   {
-      int horiz = Integer.signum(destPos.x - entity.position.x);
-      Point newPos = new Point(entity.position.x + horiz,
-         entity.position.y);
-
-      if (horiz == 0 || isOccupied(world, newPos))
-      {
-         int vert = Integer.signum(destPos.y - entity.position.y);
-         newPos = new Point(entity.position.x,
-            entity.position.y + vert);
-
-         if (vert == 0 || isOccupied(world, newPos))
-         {
-            newPos = entity.position;
-         }
-      }
-
-      return newPos;
-   }
 
    /**
     * Gets the ore blob entity's next position.
@@ -219,14 +167,14 @@ public final class Functions
       Point newPos = new Point(entity.position.x + horiz,
          entity.position.y);
 
-      Optional<Entity> occupant = getOccupant(world, newPos);
+      Optional<Entity> occupant = world.getOccupant(newPos);
 
       if (horiz == 0 ||
          (occupant.isPresent() && !(occupant.get().kind == EntityKind.ORE)))
       {
          int vert = Integer.signum(destPos.y - entity.position.y);
          newPos = new Point(entity.position.x, entity.position.y + vert);
-         occupant = getOccupant(world, newPos);
+         occupant = world.getOccupant(newPos);
 
          if (vert == 0 ||
             (occupant.isPresent() && !(occupant.get().kind == EntityKind.ORE)))
@@ -236,37 +184,6 @@ public final class Functions
       }
 
       return newPos;
-   }
-
-   /**
-    * Checks if the two given Points are adjacent to each other.
-    */
-   public static boolean adjacent(Point p1, Point p2)
-   {
-      return (p1.x == p2.x && Math.abs(p1.y - p2.y) == 1) ||
-         (p1.y == p2.y && Math.abs(p1.x - p2.x) == 1);
-   }
-
-   /**
-    * Looks around the given Point in the WorldModel to find an
-    * open (unoccupied) position.
-    */
-   public static Optional<Point> findOpenAround(WorldModel world, Point pos)
-   {
-      for (int dy = -ORE_REACH; dy <= ORE_REACH; dy++)
-      {
-         for (int dx = -ORE_REACH; dx <= ORE_REACH; dx++)
-         {
-            Point newPt = new Point(pos.x + dx, pos.y + dy);
-            if (withinBounds(world, newPt) &&
-               !isOccupied(world, newPt))
-            {
-               return Optional.of(newPt);
-            }
-         }
-      }
-
-      return Optional.empty();
    }
 
 
@@ -566,7 +483,7 @@ public final class Functions
          throw new IllegalArgumentException("position occupied");
       }
 
-      world.addEntity(entity);
+      entity.addEntity(world);
    }
 
    public static boolean withinBounds(WorldModel world, Point pos)
@@ -581,32 +498,6 @@ public final class Functions
          getOccupancyCell(world, pos) != null;
    }
 
-   public static Optional<Entity> nearestEntity(List<Entity> entities,
-      Point pos)
-   {
-      if (entities.isEmpty())
-      {
-         return Optional.empty();
-      }
-      else
-      {
-         Entity nearest = entities.get(0);
-         int nearestDistance = distanceSquared(nearest.position, pos);
-
-         for (Entity other : entities)
-         {
-            int otherDistance = distanceSquared(other.position, pos);
-
-            if (otherDistance < nearestDistance)
-            {
-               nearest = other;
-               nearestDistance = otherDistance;
-            }
-         }
-
-         return Optional.of(nearest);
-      }
-   }
 
    public static int distanceSquared(Point p1, Point p2)
    {
@@ -619,17 +510,6 @@ public final class Functions
 
 
 
-   public static void moveEntity(WorldModel world, Entity entity, Point pos)
-   {
-      Point oldPos = entity.position;
-      if (withinBounds(world, pos) && !pos.equals(oldPos))
-      {
-         setOccupancyCell(world, oldPos, null);
-         removeEntityAt(world, pos);
-         setOccupancyCell(world, pos, entity);
-         entity.position = pos;
-      }
-   }
 
 
 
@@ -670,17 +550,7 @@ public final class Functions
       }
    }
 
-   public static Optional<Entity> getOccupant(WorldModel world, Point pos)
-   {
-      if (isOccupied(world, pos))
-      {
-         return Optional.of(getOccupancyCell(world, pos));
-      }
-      else
-      {
-         return Optional.empty();
-      }
-   }
+
 
    public static Entity getOccupancyCell(WorldModel world, Point pos)
    {

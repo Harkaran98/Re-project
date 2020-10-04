@@ -28,4 +28,15 @@ public final class Point
       result = result * 31 + y;
       return result;
    }
+
+   /**
+    * Checks if the two given Points are adjacent to each other.
+    */
+   public static boolean adjacent(Point p1, Point p2)
+   {
+      return (p1.x == p2.x && Math.abs(p1.y - p2.y) == 1) ||
+              (p1.y == p2.y && Math.abs(p1.x - p2.x) == 1);
+   }
+
+
 }

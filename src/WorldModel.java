@@ -37,23 +37,69 @@ public final class WorldModel
       return nearestEntity(ofType, pos);
    }
 
-   public void removeEntity(Entity entity)
+
+
+   /**
+    * Looks around the given Point in the WorldModel to find an
+    * open (unoccupied) position.
+    */
+   public Optional<Point> findOpenAround(Point pos)
    {
-      removeEntityAt(this, entity.position);
+      for (int dy = -ORE_REACH; dy <= ORE_REACH; dy++)
+      {
+         for (int dx = -ORE_REACH; dx <= ORE_REACH; dx++)
+         {
+            Point newPt = new Point(pos.x + dx, pos.y + dy);
+            if (withinBounds(this, newPt) &&
+                    !isOccupied(this, newPt))
+            {
+               return Optional.of(newPt);
+            }
+         }
+      }
+
+      return Optional.empty();
    }
 
-   /*
-    Assumes that there is no entity currently occupying the
-    intended destination cell.
- */
-   public  void addEntity(Entity entity)
+   public Optional<Entity> nearestEntity(List<Entity> entities,
+                                                Point pos)
    {
-      if (withinBounds(this, entity.position))
+      if (entities.isEmpty())
       {
-         setOccupancyCell(this, entity.position, entity);
-         this.entities.add(entity);
+         return Optional.empty();
+      }
+      else
+      {
+         Entity nearest = entities.get(0);
+         int nearestDistance = distanceSquared(nearest.position, pos);
+
+         for (Entity other : entities)
+         {
+            int otherDistance = distanceSquared(other.position, pos);
+
+            if (otherDistance < nearestDistance)
+            {
+               nearest = other;
+               nearestDistance = otherDistance;
+            }
+         }
+
+         return Optional.of(nearest);
       }
    }
+   public Optional<Entity> getOccupant(Point pos)
+   {
+      if (isOccupied(this, pos))
+      {
+         return Optional.of(getOccupancyCell(this, pos));
+      }
+      else
+      {
+         return Optional.empty();
+      }
+   }
+
+
 
 
 }

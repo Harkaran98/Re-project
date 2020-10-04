@@ -28,6 +28,11 @@ public final class Entity
    public static final String ORE_KEY = "ore";
 
 
+   public static final String ORE_ID_PREFIX = "ore -- ";
+   public static final int ORE_CORRUPT_MIN = 20000;
+   public static final int ORE_CORRUPT_MAX = 30000;
+
+
    public Entity(EntityKind kind, String id, Point position,
       List<PImage> images, int resourceLimit, int resourceCount,
       int actionPeriod, int animationPeriod)
@@ -98,17 +103,16 @@ public final class Entity
    public void executeOreBlobActivity(WorldModel world,
                                              ImageStore imageStore, EventScheduler scheduler)
    {
-      Optional<Entity> blobTarget = findNearest(world,
-              this.position, EntityKind.VEIN);
+      Optional<Entity> blobTarget = world.findNearest(this.position, EntityKind.VEIN);
       long nextPeriod = this.actionPeriod;
 
       if (blobTarget.isPresent())
       {
          Point tgtPos = blobTarget.get().position;
 
-         if (moveToOreBlob(this, world, blobTarget.get(), scheduler))
+         if (moveToOreBlob(world, blobTarget.get(), scheduler))
          {
-            Entity quake = createQuake(tgtPos,
+            Entity quake = Functions.createQuake(tgtPos,
                     imageStore.getImageList(QUAKE_KEY));
 
             world.addEntity(quake);
@@ -118,7 +122,7 @@ public final class Entity
       }
 
       scheduler.scheduleEvent(this,
-              createActivityAction(this, world, imageStore),
+              Functions.createActivityAction(this, world, imageStore),
               nextPeriod);
    }
    public void executeQuakeActivity(WorldModel world,
@@ -131,11 +135,11 @@ public final class Entity
    public void executeVeinActivity(WorldModel world,
                                           ImageStore imageStore, EventScheduler scheduler)
    {
-      Optional<Point> openPt = findOpenAround(world, this.position);
+      Optional<Point> openPt = world.findOpenAround(this.position);
 
       if (openPt.isPresent())
       {
-         Entity ore = createOre(ORE_ID_PREFIX + this.id,
+         Entity ore = Functions.createOre(ORE_ID_PREFIX + this.id,
                  openPt.get(), ORE_CORRUPT_MIN +
                          rand.nextInt(ORE_CORRUPT_MAX - ORE_CORRUPT_MIN),
                  imageStore.getImageList(ORE_KEY));
@@ -144,7 +148,7 @@ public final class Entity
       }
 
       scheduler.scheduleEvent(this,
-              createActivityAction(this, world, imageStore),
+              Functions.createActivityAction(this, world, imageStore),
               this.actionPeriod);
    }
 
@@ -180,23 +184,23 @@ public final class Entity
    public  boolean moveToFull(WorldModel world,
                                     Entity target, EventScheduler scheduler)
    {
-      if (adjacent(this.position, target.position))
+      if (position.adjacent(this.position, target.position))
       {
          return true;
       }
       else
       {
-         Point nextPos = nextPositionMiner(this, world, target.position);
+         Point nextPos = nextPositionMiner(world, target.position);
 
          if (!this.position.equals(nextPos))
          {
-            Optional<Entity> occupant = getOccupant(world, nextPos);
+            Optional<Entity> occupant = world.getOccupant(nextPos);
             if (occupant.isPresent())
             {
                scheduler.unscheduleAllEvents(occupant.get());
             }
 
-            moveEntity(world, this, nextPos);
+            moveEntity(world, nextPos);
          }
          return false;
       }
@@ -232,7 +236,7 @@ public final class Entity
 
          if (!this.position.equals(nextPos))
          {
-            Optional<Entity> occupant = getOccupant(world, nextPos);
+            Optional<Entity> occupant = world.getOccupant(nextPos);
             if (occupant.isPresent())
             {
                scheduler.unscheduleAllEvents(occupant.get());
@@ -265,5 +269,84 @@ public final class Entity
       return false;
    }
 
+   public boolean moveToOreBlob(WorldModel world,
+                                       Entity target, EventScheduler scheduler)
+   {
+      if (adjacent(this.position, target.position))
+      {
+         world.removeEntity(target);
+         scheduler.unscheduleAllEvents(target);
+         return true;
+      }
+      else
+      {
+         Point nextPos = nextPositionOreBlob(this, world, target.position);
+
+         if (!this.position.equals(nextPos))
+         {
+            Optional<Entity> occupant = world.getOccupant(nextPos);
+            if (occupant.isPresent())
+            {
+               scheduler.unscheduleAllEvents(occupant.get());
+            }
+
+            moveEntity(world, this, nextPos);
+         }
+         return false;
+      }
+   }
+
+   /**
+    * Gets the miner entity's next position.
+    */
+   public  Point nextPositionMiner(WorldModel world,
+                                         Point destPos)
+   {
+      int horiz = Integer.signum(destPos.x - this.position.x);
+      Point newPos = new Point(this.position.x + horiz,
+              this.position.y);
+
+      if (horiz == 0 || isOccupied(world, newPos))
+      {
+         int vert = Integer.signum(destPos.y - this.position.y);
+         newPos = new Point(this.position.x,
+                 this.position.y + vert);
+
+         if (vert == 0 || isOccupied(world, newPos))
+         {
+            newPos = this.position;
+         }
+      }
+
+      return newPos;
+   }
+   public  void moveEntity(WorldModel Model, Point pos)
+   {
+      Point oldPos = this.position;
+      if (withinBounds(Model, pos) && !pos.equals(oldPos))
+      {
+         setOccupancyCell(Model, oldPos, null);
+         removeEntityAt(Model, pos);
+         setOccupancyCell(Model, pos, this);
+         this.position = pos;
+      }
+   }
+
+   /*
+  Assumes that there is no entity currently occupying the
+  intended destination cell.
+*/
+   public void addEntity(WorldModel model)
+   {
+      if (withinBounds(model, this.position))
+      {
+         setOccupancyCell(model, this.position, this);
+         this.entities.add(this);
+      }
+   }
+   public void removeEntity(WorldModel m)
+   {
+      removeEntityAt(m, this.position);
+   }
 
 }
