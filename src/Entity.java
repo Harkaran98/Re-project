@@ -208,31 +208,31 @@ public final class Entity
    public void transformFull(WorldModel world,
                                     EventScheduler scheduler, ImageStore imageStore)
    {
-      Entity miner = createMinerNotFull(this.id, this.resourceLimit,
+      Entity miner = Functions.createMinerNotFull(this.id, this.resourceLimit,
               this.position, this.actionPeriod, this.animationPeriod,
               this.images);
 
-      world.removeEntity(this);
+      this.removeEntity(world);
       scheduler.unscheduleAllEvents(this);
 
-      world.addEntity(miner);
+      miner.addEntity(world);
       scheduler.scheduleActions(miner, world, imageStore);
    }
 
    public boolean moveToNotFull(WorldModel world,
                                        Entity target, EventScheduler scheduler)
    {
-      if (adjacent(this.position, target.position))
+      if (position.adjacent(this.position, target.position))
       {
          this.resourceCount += 1;
-         world.removeEntity(target);
+         target.removeEntity(world);
          scheduler.unscheduleAllEvents(target);
 
          return true;
       }
       else
       {
-         Point nextPos = nextPositionMiner(this, world, target.position);
+         Point nextPos = this.nextPositionMiner(world, target.position);
 
          if (!this.position.equals(nextPos))
          {
@@ -242,7 +242,7 @@ public final class Entity
                scheduler.unscheduleAllEvents(occupant.get());
             }
 
-            moveEntity(world, this, nextPos);
+            this.moveEntity(world,nextPos);
          }
          return false;
       }
@@ -253,14 +253,14 @@ public final class Entity
    {
       if (this.resourceCount >= this.resourceLimit)
       {
-         Entity miner = createMinerFull(this.id, this.resourceLimit,
+         Entity miner = Functions.createMinerFull(this.id, this.resourceLimit,
                  this.position, this.actionPeriod, this.animationPeriod,
                  this.images);
 
-         world.removeEntity(this);
+         this.removeEntity(world);
          scheduler.unscheduleAllEvents(this);
 
-         world.addEntity(miner);
+         miner.addEntity(world);
          scheduler.scheduleActions(miner, world, imageStore);
 
          return true;
@@ -272,9 +272,9 @@ public final class Entity
    public boolean moveToOreBlob(WorldModel world,
                                        Entity target, EventScheduler scheduler)
    {
-      if (adjacent(this.position, target.position))
+      if (position.adjacent(this.position, target.position))
       {
-         world.removeEntity(target);
+         target.removeEntity(world);
          scheduler.unscheduleAllEvents(target);
          return true;
       }
@@ -323,11 +323,11 @@ public final class Entity
    public  void moveEntity(WorldModel Model, Point pos)
    {
       Point oldPos = this.position;
-      if (withinBounds(Model, pos) && !pos.equals(oldPos))
+      if (Model.withinBounds(pos) && !pos.equals(oldPos))
       {
-         setOccupancyCell(Model, oldPos, null);
-         removeEntityAt(Model, pos);
-         setOccupancyCell(Model, pos, this);
+         Model.setOccupancyCell(oldPos, null);
+         Model.removeEntityAt(pos);
+         Model.setOccupancyCell(pos, this);
          this.position = pos;
       }
    }
@@ -338,15 +338,45 @@ public final class Entity
 */
    public void addEntity(WorldModel model)
    {
-      if (withinBounds(model, this.position))
+      if (model.withinBounds(this.position))
       {
-         setOccupancyCell(model, this.position, this);
-         this.entities.add(this);
+         model.setOccupancyCell(this.position, this);
+         model.entities.add(this);
       }
    }
    public void removeEntity(WorldModel m)
    {
-      removeEntityAt(m, this.position);
+      m.removeEntityAt(this.position);
    }
+
+   /**
+    * Gets the ore blob entity's next position.
+    */
+   public Point nextPositionOreBlob(WorldModel world,
+                                           Point destPos)
+   {
+      int horiz = Integer.signum(destPos.x - this.position.x);
+      Point newPos = new Point(this.position.x + horiz,
+              this.position.y);
+
+      Optional<Entity> occupant = world.getOccupant(newPos);
+
+      if (horiz == 0 ||
+              (occupant.isPresent() && !(occupant.get().kind == EntityKind.ORE)))
+      {
+         int vert = Integer.signum(destPos.y - this.position.y);
+         newPos = new Point(this.position.x, this.position.y + vert);
+         occupant = world.getOccupant(newPos);
+
+         if (vert == 0 ||
+                 (occupant.isPresent() && !(occupant.get().kind == EntityKind.ORE)))
+         {
+            newPos = this.position;
+         }
+      }
+
+      return newPos;
+   }
+
 
 }

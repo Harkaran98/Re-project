@@ -99,7 +99,28 @@ public final class WorldModel
       }
    }
 
+   public void removeEntityAt(Point pos)
+   {
+      if (withinBounds(this, pos)
+              && getOccupancyCell(this, pos) != null)
+      {
+         Entity entity = getOccupancyCell(this, pos);
 
+         /* this moves the entity just outside of the grid for
+            debugging purposes */
+         entity.position = new Point(-1, -1);
+         this.entities.remove(entity);
+         setOccupancyCell(this, pos, null);
+      }
+   }
+   public boolean withinBounds(Point pos)
+   {
+      return pos.y >= 0 && pos.y < this.numRows &&
+              pos.x >= 0 && pos.x < this.numCols;
+   }
 
-
+   public void setOccupancyCell(Point pos,Entity entity)
+   {
+      this.occupancy[pos.y][pos.x] = entity;
+   }
 }
